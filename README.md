@@ -2,76 +2,77 @@
 
 Мини-приложение для планирования свадьбы и публикации цифровых приглашений.
 
-## Запуск проекта
+## 🚀 Быстрый запуск с Docker
 
-1. Скопируйте `.env.example` в `.env` и обновите переменные окружения. Значения по умолчанию подходят для локальной разработки: сервер слушает `0.0.0.0:3000`, локаль интерфейса — `ru-RU`, HTTP-логи выводятся в формате `dev`, а Prisma пишет предупреждения и ошибки. Перед запуском сервера обязательно задайте секреты авторизации и подключение к базе:
+Самый простой способ запустить приложение:
 
-   ```env
-   DATABASE_URL=postgresql://wedding:wedding@localhost:5432/wedding
-   JWT_SECRET=change-me-super-secret
-   JWT_ACCESS_TTL=15m
-   JWT_REFRESH_TTL=30d
-   ```
+```bash
+# Клонируйте репозиторий
+git clone https://github.com/NeuroAlex2024/WeddingTest1.git
+cd WeddingTest1
 
-   TTL можно указывать числом секунд или короткими суффиксами (`s`, `m`, `h`, `d`, `w`). В среде разработки допускается не задавать переменные, установив `ALLOW_INCOMPLETE_SECRETS=1`, но для реального запуска они обязательны.
-2. Установите зависимости:
+# Запустите с Docker Compose
+docker compose up -d
+
+# Приложение будет доступно по адресу:
+# http://localhost:8000
+# http://10.8.0.9:8000 (для доступа по сети)
+```
+
+## 📋 Что включено
+
+- **PostgreSQL 15** - база данных в Docker контейнере
+- **Node.js приложение** - сервер на Express
+- **Prisma ORM** - работа с базой данных
+- **Автоматические миграции** - схема БД создается автоматически
+- **Оптимизированный размер** - репозиторий без node_modules (~1 МБ)
+
+## 🔧 Ручная настройка
+
+Если вы хотите запустить без Docker:
+
+1. Установите зависимости:
    ```bash
    npm install
    ```
-3. Поднимите PostgreSQL 15 (см. раздел ниже) и примените миграции Prisma:
+
+2. Создайте файл `.env`:
+   ```env
+   DATABASE_URL=postgresql://wedding_user:wedding_password@localhost:5432/wedding
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_ACCESS_TTL=15m
+   JWT_REFRESH_TTL=30d
+   HOST=0.0.0.0
+   PORT=8000
+   NODE_ENV=production
+   ```
+
+3. Запустите PostgreSQL и примените миграции:
    ```bash
+   # Запуск PostgreSQL (если не используете Docker)
+   docker run --name wedding-postgres \
+     -e POSTGRES_DB=wedding \
+     -e POSTGRES_USER=wedding_user \
+     -e POSTGRES_PASSWORD=wedding_password \
+     -p 5432:5432 \
+     -d postgres:15
+
+   # Применение миграций
    npm run prisma:migrate
    npm run prisma:generate
    ```
-   Во время `npm run prisma:migrate` и `npm run prisma:generate` переменные `DATABASE_URL` и `JWT_SECRET` можно не указывать — конфигурация принимает неполное окружение для инструментов Prisma. Для запуска самого сервера эти переменные обязательны.
-4. Запустите сервер (Express отдаёт статические файлы и API):
-   ```bash
-   npm run dev
-   ```
-   или в продуктивном режиме:
+
+4. Запустите сервер:
    ```bash
    npm start
    ```
-5. Откройте [http://localhost:3000](http://localhost:3000) в браузере. Конструктор и опубликованные приглашения обслуживаются одним Node.js приложением.
-   Если база данных временно недоступна или переменная `DATABASE_URL` не задана, сервер продолжит обслуживать статические приглашения и API конструктор (возможна деградация функциональности, зависящей от БД). В логах появится предупреждение, позволяющее контролируемо перенести инфраструктуру.
 
-### Совместный просмотр по сети
+## 🌐 Доступ к приложению
 
-- Убедитесь, что сервер запущен и порт 3000 открыт в файерволе.
-- Узнайте локальный IP адрес хоста (например, `192.168.0.10`).
-- Гости могут открывать приложение по адресу `http://192.168.0.10:3000` и переходить по сгенерированным ссылкам вида `http://192.168.0.10:3000/invite/<slug>`.
-
-### PostgreSQL 15 локально
-
-Самый быстрый способ запустить PostgreSQL 15 — использовать Docker:
-
-```bash
-docker run \
-  --name wedding-postgres \
-  -e POSTGRES_USER=wedding \
-  -e POSTGRES_PASSWORD=wedding \
-  -e POSTGRES_DB=wedding \
-  -p 5432:5432 \
-  -d postgres:15
-```
-
-После запуска контейнера установите переменную `DATABASE_URL` в `.env`, например:
-
-```
-DATABASE_URL=postgresql://wedding:wedding@localhost:5432/wedding
-```
-
-Примените миграции (они создадут таблицы `User`, `ContractorProfile`, `WeddingProfile`, `InvitationMeta` и `Guest`):
-
-```bash
-npm run prisma:migrate
-```
-
-При необходимости пересоберите Prisma Client:
-
-```bash
-npm run prisma:generate
-```
+- **Локально**: http://localhost:8000
+- **По сети**: http://10.8.0.9:8000
+- **API**: http://localhost:8000/api/
+- **Приглашения**: http://localhost:8000/invite/<slug>
 
 ## Проверка API авторизации
 
