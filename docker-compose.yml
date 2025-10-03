@@ -1,5 +1,23 @@
 version: "3.9"
 services:
+  postgres:
+    image: postgres:15
+    container_name: wedding-postgres
+    environment:
+      - POSTGRES_DB=wedding
+      - POSTGRES_USER=wedding_user
+      - POSTGRES_PASSWORD=wedding_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wedding_user -d wedding"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   wedding:
     build:
       context: .
@@ -8,10 +26,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8000
+      - DATABASE_URL=postgresql://wedding_user:wedding_password@postgres:5432/wedding
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
     ports:
       - "8000:8000"
     volumes:
       # Монтируем только папку с приглашениями, чтобы они сохранялись на хосте
       - ./invites:/usr/src/app/invites
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  postgres_data:
 
